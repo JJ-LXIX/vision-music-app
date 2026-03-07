@@ -1,8 +1,13 @@
-import './style.css';
-import { AudioEngine } from './audioEngine';
-import { HandTracker } from './handTracker';
-import { buildScaleNotes, clamp, quantizePitchToMidi, toPitchValue } from './music';
-import type { AppSettings, HandId, Point2D } from './types';
+import "./style.css";
+import { AudioEngine } from "./audioEngine";
+import { HandTracker } from "./handTracker";
+import {
+  buildScaleNotes,
+  clamp,
+  quantizePitchToMidi,
+  toPitchValue,
+} from "./music";
+import type { AppSettings, HandId, Point2D } from "./types";
 
 const INACTIVITY_MS = 5000;
 const MOVEMENT_THRESHOLD = 0.006;
@@ -18,14 +23,14 @@ interface HandRuntimeState {
   lastMidiChangeAt: number;
 }
 
-const app = requireElement<HTMLDivElement>('#app');
+const app = requireElement<HTMLDivElement>("#app");
 
 app.innerHTML = `
   <main class="layout">
     <section class="stage-shell">
       <div class="stage-16x9">
         <canvas id="viz"></canvas>
-        <video id="camera" autoplay muted playsinline></video>
+        <video id="camera" autoplay muted plays inline></video>
       </div>
     </section>
     <aside class="controls">
@@ -77,32 +82,37 @@ app.innerHTML = `
   </main>
 `;
 
-const canvas = requireElement<HTMLCanvasElement>('#viz');
-const video = requireElement<HTMLVideoElement>('#camera');
-const audioBtn = requireElement<HTMLButtonElement>('#audio-btn');
-const statusLine = requireElement<HTMLParagraphElement>('#status-line');
-const scaleSelect = requireElement<HTMLSelectElement>('#scale-select');
-const sensitivitySlider = requireElement<HTMLInputElement>('#sensitivity');
-const smoothingSlider = requireElement<HTMLInputElement>('#smoothing');
-const presetSelect = requireElement<HTMLSelectElement>('#preset-select');
-const masterVolumeSlider = requireElement<HTMLInputElement>('#master-volume');
-const leftVolumeSlider = requireElement<HTMLInputElement>('#left-volume');
-const rightVolumeSlider = requireElement<HTMLInputElement>('#right-volume');
-const sensitivityValue = requireElement<HTMLOutputElement>('#sensitivity-value');
-const smoothingValue = requireElement<HTMLOutputElement>('#smoothing-value');
-const masterVolumeValue = requireElement<HTMLOutputElement>('#master-volume-value');
-const leftVolumeValue = requireElement<HTMLOutputElement>('#left-volume-value');
-const rightVolumeValue = requireElement<HTMLOutputElement>('#right-volume-value');
+const canvas = requireElement<HTMLCanvasElement>("#viz");
+const video = requireElement<HTMLVideoElement>("#camera");
+const audioBtn = requireElement<HTMLButtonElement>("#audio-btn");
+const statusLine = requireElement<HTMLParagraphElement>("#status-line");
+const scaleSelect = requireElement<HTMLSelectElement>("#scale-select");
+const sensitivitySlider = requireElement<HTMLInputElement>("#sensitivity");
+const smoothingSlider = requireElement<HTMLInputElement>("#smoothing");
+const presetSelect = requireElement<HTMLSelectElement>("#preset-select");
+const masterVolumeSlider = requireElement<HTMLInputElement>("#master-volume");
+const leftVolumeSlider = requireElement<HTMLInputElement>("#left-volume");
+const rightVolumeSlider = requireElement<HTMLInputElement>("#right-volume");
+const sensitivityValue =
+  requireElement<HTMLOutputElement>("#sensitivity-value");
+const smoothingValue = requireElement<HTMLOutputElement>("#smoothing-value");
+const masterVolumeValue = requireElement<HTMLOutputElement>(
+  "#master-volume-value",
+);
+const leftVolumeValue = requireElement<HTMLOutputElement>("#left-volume-value");
+const rightVolumeValue = requireElement<HTMLOutputElement>(
+  "#right-volume-value",
+);
 const ctx = require2DContext(canvas);
 
 const audio = new AudioEngine();
 const tracker = new HandTracker();
 
 const settings: AppSettings = {
-  scale: 'pentatonic',
+  scale: "pentatonic",
   sensitivity: 1,
   smoothing: 0.87,
-  preset: 'calm-air',
+  preset: "calm-air",
   masterVolume: 0.8,
   leftVolume: 0.8,
   rightVolume: 0.8,
@@ -153,9 +163,9 @@ function requireElement<T extends Element>(selector: string): T {
 }
 
 function require2DContext(target: HTMLCanvasElement): CanvasRenderingContext2D {
-  const context = target.getContext('2d');
+  const context = target.getContext("2d");
   if (!context) {
-    throw new Error('Unable to get 2D context');
+    throw new Error("Unable to get 2D context");
   }
 
   return context;
@@ -173,16 +183,16 @@ function setStatusLine(): void {
   }
 
   if (!cameraReady || !trackerReady) {
-    statusLine.textContent = 'Initializing camera and hand tracker...';
+    statusLine.textContent = "Initializing camera and hand tracker...";
     return;
   }
 
   if (!isAudioEnabled) {
-    statusLine.textContent = 'Click Enable Audio (or tap/click page once)';
+    statusLine.textContent = "Click Enable Audio (or tap/click page once)";
     return;
   }
 
-  statusLine.textContent = '';
+  statusLine.textContent = "";
 }
 
 function resizeCanvasToDisplaySize(): void {
@@ -197,10 +207,15 @@ function resizeCanvasToDisplaySize(): void {
 }
 
 function drawVideoBackground(width: number, height: number): void {
-  if (!cameraReady || video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+  if (
+    !cameraReady ||
+    video.readyState < 2 ||
+    video.videoWidth === 0 ||
+    video.videoHeight === 0
+  ) {
     const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, '#0f1722');
-    gradient.addColorStop(1, '#1c2838');
+    gradient.addColorStop(0, "#0f1722");
+    gradient.addColorStop(1, "#1c2838");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     return;
@@ -226,15 +241,31 @@ function drawVideoBackground(width: number, height: number): void {
   ctx.save();
   ctx.translate(width, 0);
   ctx.scale(-1, 1);
-  ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, width, height);
+  ctx.drawImage(
+    video,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    width,
+    height,
+  );
   ctx.restore();
 
-  ctx.fillStyle = 'rgba(5, 10, 20, 0.18)';
+  ctx.fillStyle = "rgba(5, 10, 20, 0.18)";
   ctx.fillRect(0, 0, width, height);
 }
 
-function drawHandMarker(point: Point2D, width: number, height: number, fill: string, stroke: string): void {
-  const px = ((point.x + 1) * 0.5) * width;
+function drawHandMarker(
+  point: Point2D,
+  width: number,
+  height: number,
+  fill: string,
+  stroke: string,
+): void {
+  const px = (point.x + 1) * 0.5 * width;
   const py = (1 - (point.y + 1) * 0.5) * height;
 
   ctx.fillStyle = fill;
@@ -260,12 +291,24 @@ function drawScene(): void {
 
   const leftPoint = handState.left.smoothedPoint;
   if (handState.left.hasHand && leftPoint) {
-    drawHandMarker(leftPoint, width, height, 'rgba(120, 245, 210, 0.92)', 'rgba(120, 245, 210, 0.45)');
+    drawHandMarker(
+      leftPoint,
+      width,
+      height,
+      "rgba(120, 245, 210, 0.92)",
+      "rgba(120, 245, 210, 0.45)",
+    );
   }
 
   const rightPoint = handState.right.smoothedPoint;
   if (handState.right.hasHand && rightPoint) {
-    drawHandMarker(rightPoint, width, height, 'rgba(72, 214, 172, 0.9)', 'rgba(72, 214, 172, 0.45)');
+    drawHandMarker(
+      rightPoint,
+      width,
+      height,
+      "rgba(72, 214, 172, 0.9)",
+      "rgba(72, 214, 172, 0.45)",
+    );
   }
 }
 
@@ -285,7 +328,11 @@ function toNormalized(point: Point2D): Point2D {
   };
 }
 
-function smoothMidiChoice(state: HandRuntimeState, candidateMidi: number, now: number): number {
+function smoothMidiChoice(
+  state: HandRuntimeState,
+  candidateMidi: number,
+  now: number,
+): number {
   if (state.currentMidi === null) {
     state.currentMidi = candidateMidi;
     state.lastMidiChangeAt = now;
@@ -293,7 +340,10 @@ function smoothMidiChoice(state: HandRuntimeState, candidateMidi: number, now: n
   }
 
   const delta = Math.abs(candidateMidi - state.currentMidi);
-  if (delta < NOTE_CHANGE_MIN_SEMITONES && now - state.lastMidiChangeAt < NOTE_CHANGE_MIN_INTERVAL_MS) {
+  if (
+    delta < NOTE_CHANGE_MIN_SEMITONES &&
+    now - state.lastMidiChangeAt < NOTE_CHANGE_MIN_INTERVAL_MS
+  ) {
     return state.currentMidi;
   }
 
@@ -319,61 +369,63 @@ async function ensureAudioStarted(): Promise<void> {
   await audio.start();
   audio.setPreset(settings.preset);
   audio.setMasterVolume(settings.masterVolume);
-  audio.setHandVolume('left', settings.leftVolume);
-  audio.setHandVolume('right', settings.rightVolume);
+  audio.setHandVolume("left", settings.leftVolume);
+  audio.setHandVolume("right", settings.rightVolume);
   isAudioEnabled = true;
-  audioBtn.textContent = 'Audio Enabled';
+  audioBtn.textContent = "Audio Enabled";
   audioBtn.disabled = true;
   setStatusLine();
 }
 
 function wireControls(): void {
-  scaleSelect.addEventListener('change', () => {
-    settings.scale = scaleSelect.value === 'major' ? 'major' : 'pentatonic';
+  scaleSelect.addEventListener("change", () => {
+    settings.scale = scaleSelect.value === "major" ? "major" : "pentatonic";
     scaleNotes = buildScaleNotes(settings.scale);
   });
 
-  sensitivitySlider.addEventListener('input', () => {
+  sensitivitySlider.addEventListener("input", () => {
     settings.sensitivity = Number(sensitivitySlider.value);
     sensitivityValue.textContent = settings.sensitivity.toFixed(2);
   });
 
-  smoothingSlider.addEventListener('input', () => {
+  smoothingSlider.addEventListener("input", () => {
     settings.smoothing = Number(smoothingSlider.value);
     smoothingValue.textContent = settings.smoothing.toFixed(2);
   });
 
-  presetSelect.addEventListener('change', () => {
+  presetSelect.addEventListener("change", () => {
     const value = presetSelect.value;
     settings.preset =
-      value === 'warm-pad' || value === 'glass' || value === 'ethereal' ? value : 'calm-air';
+      value === "warm-pad" || value === "glass" || value === "ethereal"
+        ? value
+        : "calm-air";
     audio.setPreset(settings.preset);
   });
 
-  masterVolumeSlider.addEventListener('input', () => {
+  masterVolumeSlider.addEventListener("input", () => {
     settings.masterVolume = Number(masterVolumeSlider.value);
     masterVolumeValue.textContent = settings.masterVolume.toFixed(2);
     audio.setMasterVolume(settings.masterVolume);
   });
 
-  leftVolumeSlider.addEventListener('input', () => {
+  leftVolumeSlider.addEventListener("input", () => {
     settings.leftVolume = Number(leftVolumeSlider.value);
     leftVolumeValue.textContent = settings.leftVolume.toFixed(2);
-    audio.setHandVolume('left', settings.leftVolume);
+    audio.setHandVolume("left", settings.leftVolume);
   });
 
-  rightVolumeSlider.addEventListener('input', () => {
+  rightVolumeSlider.addEventListener("input", () => {
     settings.rightVolume = Number(rightVolumeSlider.value);
     rightVolumeValue.textContent = settings.rightVolume.toFixed(2);
-    audio.setHandVolume('right', settings.rightVolume);
+    audio.setHandVolume("right", settings.rightVolume);
   });
 
-  audioBtn.addEventListener('click', () => {
+  audioBtn.addEventListener("click", () => {
     void ensureAudioStarted();
   });
 
   window.addEventListener(
-    'pointerdown',
+    "pointerdown",
     () => {
       void ensureAudioStarted();
     },
@@ -381,7 +433,7 @@ function wireControls(): void {
   );
 
   window.addEventListener(
-    'keydown',
+    "keydown",
     () => {
       void ensureAudioStarted();
     },
@@ -389,7 +441,11 @@ function wireControls(): void {
   );
 }
 
-function handleHandUpdate(hand: HandId, rawPoint: Point2D | null, now: number): void {
+function handleHandUpdate(
+  hand: HandId,
+  rawPoint: Point2D | null,
+  now: number,
+): void {
   const state = handState[hand];
 
   if (!rawPoint) {
@@ -423,14 +479,19 @@ function handleHandUpdate(hand: HandId, rawPoint: Point2D | null, now: number): 
 
 function processAudioForHand(hand: HandId, now: number): void {
   const state = handState[hand];
-  const activeMotion = state.hasHand && now - state.lastSignificantMotionAt <= INACTIVITY_MS;
+  const activeMotion =
+    state.hasHand && now - state.lastSignificantMotionAt <= INACTIVITY_MS;
 
   if (!isAudioEnabled) {
     return;
   }
 
   if (state.hasHand && state.smoothedPoint && activeMotion) {
-    const pitchValue = toPitchValue(state.smoothedPoint.x, state.smoothedPoint.y, settings.sensitivity);
+    const pitchValue = toPitchValue(
+      state.smoothedPoint.x,
+      state.smoothedPoint.y,
+      settings.sensitivity,
+    );
     const candidateMidi = quantizePitchToMidi(pitchValue, scaleNotes);
     const smoothedMidi = smoothMidiChoice(state, candidateMidi, now);
     audio.playMidi(hand, smoothedMidi);
@@ -447,10 +508,12 @@ function loop(): void {
     try {
       const detection = tracker.detect(video, now);
       if (detection !== undefined && detection !== null) {
-        const left = detection.hands.find((hand) => hand.id === 'left')?.point ?? null;
-        const right = detection.hands.find((hand) => hand.id === 'right')?.point ?? null;
-        handleHandUpdate('left', left, now);
-        handleHandUpdate('right', right, now);
+        const left =
+          detection.hands.find((hand) => hand.id === "left")?.point ?? null;
+        const right =
+          detection.hands.find((hand) => hand.id === "right")?.point ?? null;
+        handleHandUpdate("left", left, now);
+        handleHandUpdate("right", right, now);
       }
     } catch (error) {
       trackerReady = false;
@@ -459,8 +522,8 @@ function loop(): void {
     }
   }
 
-  processAudioForHand('left', now);
-  processAudioForHand('right', now);
+  processAudioForHand("left", now);
+  processAudioForHand("right", now);
 
   drawScene();
   requestAnimationFrame(loop);
@@ -476,7 +539,7 @@ async function bootstrap(): Promise<void> {
     cameraReady = true;
   } catch (error) {
     cameraError = `Camera failed (${String(error)})`;
-    console.error('Camera start failed:', error);
+    console.error("Camera start failed:", error);
   }
 
   setStatusLine();
@@ -485,8 +548,8 @@ async function bootstrap(): Promise<void> {
     await tracker.init();
     trackerReady = true;
   } catch (error) {
-    trackerError = 'Tracking unavailable (model/network/GPU issue)';
-    console.error('Tracker init failed:', error);
+    trackerError = "Tracking unavailable (model/network/GPU issue)";
+    console.error("Tracker init failed:", error);
   }
 
   setStatusLine();

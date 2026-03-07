@@ -1,0 +1,131 @@
+:root {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #e8efff;
+  background: radial-gradient(circle at 15% 10%, #1f334f 0%, #0c121a 45%, #080c11 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#app {
+  min-height: 100vh;
+  padding: 1.1rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.stage-shell {
+  min-width: 0;
+}
+
+.stage-16x9 {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(170, 196, 232, 0.26);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+#viz {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#camera {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.controls {
+  border: 1px solid rgba(172, 200, 240, 0.25);
+  border-radius: 18px;
+  padding: 1rem;
+  background: linear-gradient(180deg, rgba(16, 33, 56, 0.78), rgba(9, 18, 30, 0.88));
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+}
+
+.controls h1 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+}
+
+select,
+input,
+button {
+  width: 100%;
+}
+
+output {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  opacity: 0.85;
+}
+
+.audio-btn {
+  margin-top: 0.2rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(194, 219, 255, 0.45);
+  background: rgba(9, 20, 36, 0.82);
+  color: #e8efff;
+  cursor: pointer;
+}
+
+.audio-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.status-line {
+  min-height: 1.25rem;
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(226, 236, 255, 0.82);
+}
+
+@media (max-width: 1080px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .controls {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+
+  .controls h1,
+  .audio-btn,
+  .status-line {
+    grid-column: 1 / -1;
+  }
+}

@@ -6,7 +6,8 @@ export interface AppSettings {
   scale: ScaleName;
   sensitivity: number;
   smoothing: number;
-  preset: SynthPresetName;
+  leftPreset: SynthPresetName;
+  rightPreset: SynthPresetName;
   masterVolume: number;
   leftVolume: number;
   rightVolume: number;

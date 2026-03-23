@@ -7,7 +7,7 @@ import {
   quantizePitchToMidi,
   toPitchValue,
 } from "./music";
-import type { AppSettings, HandId, Point2D } from "./types";
+import type { AppSettings, HandId, Point2D, SynthPresetName } from "./types";
 
 const INACTIVITY_MS = 5000;
 const MOVEMENT_THRESHOLD = 0.006;
@@ -53,12 +53,21 @@ app.innerHTML = `
         <output id="smoothing-value">0.87</output>
       </label>
       <label>
-        Synth Preset
-        <select id="preset-select">
-          <option value="calm-air">Calm Air</option>
+        Left Hand Synth
+        <select id="left-preset-select">
+          <option value="calm-air" selected>Calm Air</option>
           <option value="warm-pad">Warm Pad</option>
           <option value="glass">Glass</option>
           <option value="ethereal">Ethereal</option>
+        </select>
+      </label>
+      <label>
+        Right Hand Synth
+        <select id="right-preset-select">
+          <option value="calm-air">Calm Air</option>
+          <option value="warm-pad">Warm Pad</option>
+          <option value="glass">Glass</option>
+          <option value="ethereal" selected>Ethereal</option>
         </select>
       </label>
       <label>
@@ -89,7 +98,8 @@ const statusLine = requireElement<HTMLParagraphElement>("#status-line");
 const scaleSelect = requireElement<HTMLSelectElement>("#scale-select");
 const sensitivitySlider = requireElement<HTMLInputElement>("#sensitivity");
 const smoothingSlider = requireElement<HTMLInputElement>("#smoothing");
-const presetSelect = requireElement<HTMLSelectElement>("#preset-select");
+const leftPresetSelect = requireElement<HTMLSelectElement>("#left-preset-select");
+const rightPresetSelect = requireElement<HTMLSelectElement>("#right-preset-select");
 const masterVolumeSlider = requireElement<HTMLInputElement>("#master-volume");
 const leftVolumeSlider = requireElement<HTMLInputElement>("#left-volume");
 const rightVolumeSlider = requireElement<HTMLInputElement>("#right-volume");
@@ -112,7 +122,8 @@ const settings: AppSettings = {
   scale: "pentatonic",
   sensitivity: 1,
   smoothing: 0.87,
-  preset: "calm-air",
+  leftPreset: "calm-air",
+  rightPreset: "ethereal",
   masterVolume: 0.8,
   leftVolume: 0.8,
   rightVolume: 0.8,
@@ -367,7 +378,8 @@ async function ensureAudioStarted(): Promise<void> {
   }
 
   await audio.start();
-  audio.setPreset(settings.preset);
+  audio.setHandPreset("left", settings.leftPreset);
+  audio.setHandPreset("right", settings.rightPreset);
   audio.setMasterVolume(settings.masterVolume);
   audio.setHandVolume("left", settings.leftVolume);
   audio.setHandVolume("right", settings.rightVolume);
@@ -393,13 +405,16 @@ function wireControls(): void {
     smoothingValue.textContent = settings.smoothing.toFixed(2);
   });
 
-  presetSelect.addEventListener("change", () => {
-    const value = presetSelect.value;
-    settings.preset =
-      value === "warm-pad" || value === "glass" || value === "ethereal"
-        ? value
-        : "calm-air";
-    audio.setPreset(settings.preset);
+  leftPresetSelect.addEventListener("change", () => {
+    const value = leftPresetSelect.value as SynthPresetName;
+    settings.leftPreset = value;
+    audio.setHandPreset("left", value);
+  });
+
+  rightPresetSelect.addEventListener("change", () => {
+    const value = rightPresetSelect.value as SynthPresetName;
+    settings.rightPreset = value;
+    audio.setHandPreset("right", value);
   });
 
   masterVolumeSlider.addEventListener("input", () => {

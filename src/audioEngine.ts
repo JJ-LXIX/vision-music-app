@@ -58,15 +58,15 @@ const PRESETS: Record<SynthPresetName, SynthPreset> = {
   },
 };
 
-const HANDS: HandId[] = ['left', 'right'];
-
 export class AudioEngine {
   private readonly reverb: Tone.Reverb;
   private readonly masterGain: Tone.Gain;
   private readonly voices: Record<HandId, VoiceState>;
   private isStarted = false;
-  private presetGain = PRESETS['calm-air'].gain;
-  private glideSeconds = PRESETS['calm-air'].glideSeconds;
+  private readonly handPresets: Record<HandId, SynthPresetName> = {
+    left: 'calm-air',
+    right: 'calm-air',
+  };
 
   constructor() {
     const context = new Tone.Context({ latencyHint: 'interactive' });
@@ -95,10 +95,9 @@ export class AudioEngine {
 
   setPreset(name: SynthPresetName): void {
     const preset = PRESETS[name];
-    this.presetGain = preset.gain;
-    this.glideSeconds = preset.glideSeconds;
 
-    for (const hand of HANDS) {
+    for (const hand of ['left', 'right'] as HandId[]) {
+      this.handPresets[hand] = name;
       const voice = this.voices[hand];
       voice.synth.set({
         oscillator: { type: preset.oscillatorType },
@@ -119,6 +118,33 @@ export class AudioEngine {
     }
 
     this.reverb.set({ decay: preset.reverbDecay, wet: preset.reverbWet });
+  }
+
+  setHandPreset(hand: HandId, name: SynthPresetName): void {
+    this.handPresets[hand] = name;
+    const preset = PRESETS[name];
+    const voice = this.voices[hand];
+
+    voice.synth.set({
+      oscillator: { type: preset.oscillatorType },
+      envelope: {
+        attack: preset.attack,
+        decay: 0.35,
+        sustain: 0.85,
+        release: preset.release,
+      },
+    });
+
+    if (voice.isActive) {
+      const now = Tone.now();
+      voice.gain.gain.cancelScheduledValues(now);
+      voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
+      voice.gain.gain.linearRampToValueAtTime(this.targetGain(hand), now + 0.25);
+    }
+  }
+
+  getHandPreset(hand: HandId): SynthPresetName {
+    return this.handPresets[hand];
   }
 
   setMasterVolume(value: number): void {
@@ -149,6 +175,8 @@ export class AudioEngine {
     }
 
     const voice = this.voices[hand];
+    const presetName = this.handPresets[hand];
+    const preset = PRESETS[presetName];
     const now = Tone.now();
     const frequency = Tone.Frequency(midi, 'midi').toFrequency();
 
@@ -165,7 +193,7 @@ export class AudioEngine {
     if (voice.currentMidi !== midi) {
       voice.synth.frequency.cancelScheduledValues(now);
       voice.synth.frequency.setValueAtTime(voice.synth.frequency.value, now);
-      voice.synth.frequency.linearRampToValueAtTime(frequency, now + this.glideSeconds);
+      voice.synth.frequency.linearRampToValueAtTime(frequency, now + preset.glideSeconds);
       voice.currentMidi = midi;
     }
   }
@@ -212,7 +240,8 @@ export class AudioEngine {
   }
 
   private targetGain(hand: HandId): number {
-    return this.presetGain * this.voices[hand].level;
+    const preset = PRESETS[this.handPresets[hand]];
+    return preset.gain * this.voices[hand].level;
   }
 }
 
